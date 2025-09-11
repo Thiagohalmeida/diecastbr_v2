@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Lamborghini Countach",
+    "series": "HW Exotics",
+    "collection_number": "1/10",
+    "year": "2024",
+    "brand": "Hot Wheels",
+    "upc": "194735125456"
+  },
+  {
+    "name": "Nissan Skyline GT-R",
+    "series": "JDM Tuners",
+    "collection_number": "2/5",
+    "year": "2024",
+    "brand": "Hot Wheels",
+    "upc": "194735125463"
+  },
+  {
+    "name": "Ford Mustang GT",
+    "series": "Muscle Mania",
+    "collection_number": "3/10",
+    "year": "2024",
+    "brand": "Hot Wheels",
+    "upc": "194735125470"
+  }
+]

@@ -1,0 +1,9 @@
+requests==2.31.0
+beautifulsoup4==4.12.2
+supabase==2.3.4
+python-dotenv==1.0.0
+lxml==4.9.3
+fastapi
+uvicorn
+pydantic
+typing-extensions

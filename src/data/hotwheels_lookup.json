@@ -1,0 +1,21 @@
+[
+    {
+      "model_name": "DATSUN 240Z",
+      "brand": "Nissan",
+      "base_color": "Azul",
+      "year": 2018,
+      "series": "HW ART CARS",
+      "collection_number": "4/10",
+      "upc": "0772708471201"
+    },
+    {
+      "model_name": "PORSCHE 911 GT3 RS",
+      "brand": "Porsche",
+      "base_color": "Laranja",
+      "year": 2020,
+      "series": "HW SPEED GRAPHICS",
+      "collection_number": "7/10",
+      "upc": "0887961912532"
+    }
+   
+  ]

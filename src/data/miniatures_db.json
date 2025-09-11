@@ -1,0 +1,18 @@
+[
+  {
+    "upc": "887961707175",
+    "name": "Hot Wheels Lamborghini Huracán LP 610-4",
+    "brand": "Hot Wheels",
+    "year": "2023",
+    "image_url": "/placeholder.svg?height=200&width=200",
+    "description": "Miniatura Hot Wheels da Lamborghini Huracán"
+  },
+  {
+    "upc": "887961707182",
+    "name": "Hot Wheels Ferrari F40",
+    "brand": "Hot Wheels",
+    "year": "2023",
+    "image_url": "/placeholder.svg?height=200&width=200",
+    "description": "Miniatura Hot Wheels da Ferrari F40"
+  }
+]
