@@ -1,30 +1,22 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import type { Database } from "./types"
+// lib/supabase/client.ts
+import { createBrowserClient } from "@supabase/ssr";
 
-let supabaseClient: ReturnType<typeof createSupabaseClient<Database>> | null = null
+let supabaseClient: ReturnType<typeof createBrowserClient> | null = null;
 
 export function createClient() {
-  // Não criar cliente durante SSR
-  if (typeof window === "undefined") {
-    return null
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (typeof window === "undefined") return null;
+
+  if (!url || !anon) {
+    console.error("[Supabase] Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY no .env.local");
+    return null;
   }
 
-  // Verificar se as variáveis de ambiente estão definidas
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.error("Erro crítico: Variáveis de ambiente do Supabase não encontradas")
-    return null
-  }
-
-  // Criar cliente apenas uma vez (singleton)
   if (!supabaseClient) {
-    supabaseClient = createSupabaseClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
+    supabaseClient = createBrowserClient(url, anon);
   }
-  
-  return supabaseClient
-}
 
-// Não exportar instância direta para evitar uso inconsistente
-// Sempre use createClient() para obter a instância
+  return supabaseClient;
+}

@@ -73,6 +73,7 @@
     "react-resizable-panels": "latest",
     "react-router-dom": "latest",
     "recharts": "latest",
+    "resend": "^6.0.3",
     "sass": "latest",
     "sass-embedded": "latest",
     "sonner": "latest",

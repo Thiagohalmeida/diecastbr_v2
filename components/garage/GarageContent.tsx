@@ -38,7 +38,7 @@ export function GarageContent() {
     const getUser = async () => {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase!.auth.getUser()
       setUser(user)
 
       if (user) {
@@ -59,7 +59,7 @@ export function GarageContent() {
 
     try {
       // Verificar se a tabela user_miniatures existe
-      const { error: tableCheckError } = await supabase
+      const { error: tableCheckError } = await supabase!
         .from("user_miniatures")
         .select("id")
         .limit(1)
@@ -72,7 +72,7 @@ export function GarageContent() {
       }
 
       // Verificar se a tabela miniatures_master existe
-      const { error: masterTableCheckError } = await supabase
+      const { error: masterTableCheckError } = await supabase!
         .from("miniatures_master")
         .select("id")
         .limit(1)
@@ -84,7 +84,7 @@ export function GarageContent() {
         return
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from("user_miniatures")
         .select(`
           *,
