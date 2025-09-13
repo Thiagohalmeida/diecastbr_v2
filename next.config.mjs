@@ -9,6 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    allowedHosts: true,
+  },
 }
 
 export default nextConfig
