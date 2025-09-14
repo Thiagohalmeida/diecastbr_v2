@@ -10,7 +10,7 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    allowedHosts: true,
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
   },
 }
 
