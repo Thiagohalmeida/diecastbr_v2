@@ -76,7 +76,12 @@ export default function RootLayout({
       {/* usa as fontes via Tailwind (font-sans/font-mono) */}
       <body className="min-h-dvh bg-background font-sans antialiased">
         <ErrorBoundary>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem={true}
+            disableTransitionOnChange={true}
+          >
             <QueryProvider>
               <AuthProvider>
                 <TooltipProvider>
