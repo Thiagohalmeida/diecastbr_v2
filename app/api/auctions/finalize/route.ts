@@ -1,11 +1,9 @@
 // app/api/auctions/finalize/route.ts
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
 
-// Garante runtime Node (não Edge)
 export const runtime = "nodejs";
-// Evita qualquer tentativa de pré-renderização
 export const dynamic = "force-dynamic";
 
 type AuctionRow = { id: string };
@@ -16,28 +14,20 @@ type FinalizeRow = {
   owner_user_id: string;
 };
 
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url) throw new Error("ENV NEXT_PUBLIC_SUPABASE_URL não definida");
-  if (!serviceKey) throw new Error("ENV SUPABASE_SERVICE_ROLE_KEY não definida");
-
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
-}
-
-function getResend() {
-  const key = process.env.RESEND_API_KEY;
-  return key ? new Resend(key) : null;
-}
-
 export async function POST() {
   try {
-    // **cria os clientes só agora, em tempo de request**
-    const admin = getAdminClient();
-    const resend = getResend();
+    // ==> CRIA o client APENAS aqui, em runtime
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // 1) Buscar leilões a finalizar (view)
+    if (!url) throw new Error("ENV NEXT_PUBLIC_SUPABASE_URL não definida");
+    if (!serviceKey) throw new Error("ENV SUPABASE_SERVICE_ROLE_KEY não definida");
+
+    const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+
+    const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+    // 1) buscar leilões a finalizar (view)
     const { data: toFinalize, error: e0 } = (await admin
       .from("auctions_to_finalize")
       .select("id")) as { data: AuctionRow[] | null; error: any | null };
@@ -47,7 +37,7 @@ export async function POST() {
     const results: Array<{ trade_id: string; status: "sold" | "canceled" }> = [];
 
     for (const row of toFinalize ?? []) {
-      // 2) Finaliza via RPC (retorna dados do vencedor)
+      // 2) finalizar via RPC
       const { data: fin, error: e1 } = (await admin
         .rpc("finalize_auction", { p_trade_id: row.id })
         .single()) as { data: FinalizeRow | null; error: any | null };
@@ -56,7 +46,7 @@ export async function POST() {
 
       const { trade_id, winner_user_id, winner_amount, owner_user_id } = fin;
 
-      // 3) E-mails
+      // 3) e-mails
       const sellerRes = await admin.auth.admin.getUserById(owner_user_id);
       const sellerEmail = sellerRes.data?.user?.email ?? null;
 
@@ -66,7 +56,6 @@ export async function POST() {
         winnerEmail = winRes.data?.user?.email ?? null;
       }
 
-      // 4) Notificação por e-mail (se RESEND_API_KEY estiver configurada)
       if (sellerEmail && resend) {
         const subject =
           winner_user_id && winner_amount != null
@@ -99,4 +88,9 @@ export async function POST() {
       { status: 500 }
     );
   }
+}
+
+// (opcional) Evita erro ao bater GET no endpoint manualmente
+export function GET() {
+  return NextResponse.json({ ok: true, message: "Use POST para finalizar leilões." });
 }
