@@ -26,7 +26,37 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+
+  try {
+    const { data: { user: authUser }, error } = await supabase.auth.getUser();
+    
+    // If there's a validation error, clear auth cookies and continue as unauthenticated
+    if (error && error.message?.includes('validation_failed')) {
+      console.log('[Middleware] Clearing invalid auth cookies due to validation error:', error.message);
+      
+      // Clear all auth-related cookies
+      const authCookies = request.cookies.getAll().filter(cookie => 
+        cookie.name.startsWith('sb-') || 
+        cookie.name.includes('auth-token') ||
+        cookie.name.includes('supabase')
+      );
+      
+      authCookies.forEach(cookie => {
+        response.cookies.delete(cookie.name);
+      });
+      
+      user = null;
+    } else if (error) {
+      console.error('[Middleware] Auth error:', error.message);
+      user = null;
+    } else {
+      user = authUser;
+    }
+  } catch (error) {
+    console.error('[Middleware] Unexpected auth error:', error);
+    user = null;
+  }
 
   const pathname = request.nextUrl.pathname;
 
