@@ -348,7 +348,7 @@ export function GarageContent() {
                 className={`border-0 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer group bg-card/50 backdrop-blur-sm ${
                   viewMode === "list" ? "p-4" : ""
                 }`}
-                onClick={() => router.push(`/miniature/${miniature.id}`)}
+              onClick={() => router.push(`/miniature/${miniature.miniatures_master?.id ?? miniature.id}`)}
               >
                 <CardContent className={viewMode === "grid" ? "p-4" : "p-0"}>
                   <div className={viewMode === "list" ? "flex items-center gap-4" : ""}>
