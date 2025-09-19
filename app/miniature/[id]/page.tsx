@@ -1,66 +1,79 @@
-"use client"
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Image from "next/image"
-import { createClient } from "@/lib/supabase/client"
-import type { Tables } from "@/lib/supabase/types"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Navbar } from "@/components/layout/Navbar"
-import { Car, ChevronLeft, Trophy } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
+import type { Tables } from "@/lib/supabase/types";
 
-type MiniMaster = Tables<"miniatures_master">
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Navbar } from "@/components/layout/Navbar";
+import { Car, ChevronLeft, Trophy } from "lucide-react";
+
+type MiniMaster = Tables<"miniatures_master">;
 
 export default function MiniatureDetailsPage() {
-  const { id } = useParams<{ id: string }>()
-  const router = useRouter()
-  const supabase = createClient()
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const supabase = createClient();
 
-  const [loading, setLoading] = useState(true)
-  const [mini, setMini] = useState<MiniMaster | null>(null)
+  const [loading, setLoading] = useState(true);
+  const [mini, setMini] = useState<MiniMaster | null>(null);
 
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
+
     async function load() {
       try {
-        // 1) tenta como id do catálogo
-        const { data: master } = await supabase
+        setLoading(true);
+
+        // 1) tenta como ID do catálogo
+        const { data: master, error: e1 } = await supabase
           .from("miniatures_master")
           .select(
             "id, model_name, brand, launch_year, series, collection_number, base_color, upc, official_blister_photo_url"
           )
           .eq("id", id)
-          .maybeSingle()
+          .maybeSingle();
 
-        if (mounted && master) {
-          setMini(master as MiniMaster)
-          setLoading(false)
-          return
+        if (mounted && master && !e1) {
+          setMini(master as MiniMaster);
+          return;
         }
 
-        // 2) fallback: id de user_miniatures -> projeta para o catálogo
-        const { data: um } = await supabase
+        // 2) fallback: ID de user_miniatures -> projeta para o catálogo
+        // alias 'master:miniature_id(...)' garante o aninhamento correto
+        const { data: um, error: e2 } = await supabase
           .from("user_miniatures")
           .select(
-            "id, miniature_id, miniatures_master ( id, model_name, brand, launch_year, series, collection_number, base_color, upc, official_blister_photo_url )"
+            `
+            id,
+            miniature_id,
+            master:miniature_id (
+              id, model_name, brand, launch_year, series, collection_number, base_color, upc, official_blister_photo_url
+            )
+          `
           )
           .eq("id", id)
-          .maybeSingle()
+          .maybeSingle();
 
-        if (mounted && um && (um as any).miniatures_master) {
-          setMini((um as any).miniatures_master as MiniMaster)
+        if (!e2 && um && (um as any).master) {
+          setMini((um as any).master as MiniMaster);
         }
       } finally {
-        mounted && setLoading(false)
+        mounted && setLoading(false);
       }
     }
-    load()
-    return () => { mounted = false }
+
+    load();
+    return () => {
+      mounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  }, [id]);
 
   if (loading) {
     return (
@@ -79,7 +92,7 @@ export default function MiniatureDetailsPage() {
           </div>
         </div>
       </>
-    )
+    );
   }
 
   if (!mini) {
@@ -88,7 +101,9 @@ export default function MiniatureDetailsPage() {
         <Navbar />
         <div className="max-w-3xl mx-auto p-4">
           <Card>
-            <CardHeader><CardTitle>Miniatura não encontrada</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Miniatura não encontrada</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
                 Não localizamos os dados desta miniatura no catálogo.
@@ -101,22 +116,27 @@ export default function MiniatureDetailsPage() {
           </Card>
         </div>
       </>
-    )
+    );
   }
 
-  const title = `${mini.brand ?? "Marca"} — ${mini.model_name ?? "Modelo"}`
+  const title = `${mini.brand ?? "Marca"} — ${mini.model_name ?? "Modelo"}`;
   const info = [
     { label: "Ano", value: mini.launch_year ?? "—" },
     { label: "Série", value: mini.series ?? "—" },
     { label: "Coleção", value: mini.collection_number ?? "—" },
     { label: "Cor", value: mini.base_color ?? "—" },
-  ]
+  ];
 
   return (
     <>
       <Navbar />
       <div className="max-w-5xl mx-auto p-4 space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} className="px-0 text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="px-0 text-muted-foreground"
+        >
           <ChevronLeft className="mr-1 h-4 w-4" /> Voltar
         </Button>
 
@@ -148,14 +168,16 @@ export default function MiniatureDetailsPage() {
               <h1 className="text-2xl md:text-3xl font-bold">{title}</h1>
               <Badge variant="secondary">Catálogo</Badge>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
-              {info.map(i => (
+              {info.map((i) => (
                 <div key={i.label} className="p-3 rounded-md border bg-card/50">
                   <div className="text-xs text-muted-foreground">{i.label}</div>
                   <div className="text-sm font-medium">{String(i.value)}</div>
                 </div>
               ))}
             </div>
+
             <div className="pt-2">
               <Button onClick={() => router.push(`/add?prefill=${mini.id}`)}>
                 <Trophy className="mr-2 h-4 w-4" />
@@ -166,5 +188,5 @@ export default function MiniatureDetailsPage() {
         </div>
       </div>
     </>
-  )
+  );
 }

@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { BidDialog } from "@/components/trading/BidDialog";
 import { BidsPanel } from "@/components/trading/BidsPanel";
+import { SellerContactPanel } from "@/components/trading/SellerContactPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+// se você tiver o Badge do shadcn:
+import { Badge } from "@/components/ui/badge";
 
 type Listing = {
   id: string;
@@ -38,11 +41,22 @@ export default function TradingDetailPage() {
   const supabase = createClient();
 
   const load = async () => {
-    // 1) anúncio
     const { data: l, error: e1 } = await supabase
       .from("trade_listings")
       .select(
-        "id, listing_type, status, sale_price, trade_accepts, auction_start, auction_end, auction_starting_price, auction_allow_cents, owner_user_id, user_miniature_id"
+        [
+          "id",
+          "listing_type",
+          "status",
+          "sale_price",
+          "trade_accepts",
+          "auction_start",
+          "auction_end",
+          "auction_starting_price",
+          "auction_allow_cents",
+          "owner_user_id",
+          "user_miniature_id",
+        ].join(",")
       )
       .eq("id", id)
       .single();
@@ -53,7 +67,6 @@ export default function TradingDetailPage() {
       return;
     }
 
-    // 2) master (2 passos)
     let brand: string | null = null;
     let model_name: string | null = null;
     let image_url: string | null = null;
@@ -70,6 +83,7 @@ export default function TradingDetailPage() {
         .select("brand, model_name, image_url")
         .eq("id", um.miniature_id)
         .maybeSingle();
+
       brand = master?.brand ?? null;
       model_name = master?.model_name ?? null;
       image_url = master?.image_url ?? null;
@@ -83,6 +97,24 @@ export default function TradingDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const now = new Date();
+
+  const statusLabel = useMemo(() => {
+    if (!listing) return null;
+    if (listing.listing_type !== "auction") return null;
+
+    const start = listing.auction_start ? new Date(listing.auction_start) : null;
+    const end = listing.auction_end ? new Date(listing.auction_end) : null;
+
+    const hasStarted = start ? now >= start : true;
+    const hasEnded = end ? now > end : false;
+
+    if (listing.status !== "open") return { text: "Encerrado", color: "destructive" as const };
+    if (hasEnded) return { text: "Encerrado", color: "destructive" as const };
+    if (hasStarted) return { text: "Aceitando lances", color: "success" as const };
+    return { text: "Aguardando início", color: "secondary" as const };
+  }, [listing]);
+
   if (!listing) {
     return (
       <div className="min-h-screen bg-background">
@@ -93,15 +125,33 @@ export default function TradingDetailPage() {
   }
 
   const isOwner = user?.id === listing.owner_user_id;
+  const isSale =
+    listing.listing_type === "sell" || listing.listing_type === "sell_or_trade";
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container py-6 space-y-6">
-        <div>
+        <div className="flex items-center gap-3">
           <Button variant="ghost" onClick={() => router.push("/trading")}>
             ← Voltar
           </Button>
+
+          {statusLabel && (
+            <Badge
+              // shadcn badge variants: default / secondary / destructive … crie um "success" no seu tailwind se quiser
+              variant={statusLabel.color === "destructive" ? "destructive" : "secondary"}
+              className={
+                statusLabel.color === "success"
+                  ? "bg-green-600 text-white"
+                  : statusLabel.color === "secondary"
+                  ? ""
+                  : ""
+              }
+            >
+              {statusLabel.text}
+            </Badge>
+          )}
         </div>
 
         <Card>
@@ -118,7 +168,8 @@ export default function TradingDetailPage() {
             )}
 
             <div className="text-xl font-semibold">
-              {listing.brand} — {listing.model_name}
+              {listing.brand} {listing.brand && listing.model_name ? "—" : ""}{" "}
+              {listing.model_name}
             </div>
             <div className="text-sm text-muted-foreground">
               Tipo: {listing.listing_type}
@@ -127,9 +178,11 @@ export default function TradingDetailPage() {
             {listing.listing_type !== "auction" && listing.sale_price != null && (
               <div>Preço: R$ {listing.sale_price.toFixed(2)}</div>
             )}
+
             {listing.listing_type === "trade" && (
               <div>Aceito: {listing.trade_accepts || "combinar"}</div>
             )}
+
             {listing.listing_type === "auction" && (
               <>
                 <div>
@@ -155,9 +208,14 @@ export default function TradingDetailPage() {
 
             <div className="flex gap-2">
               {listing.listing_type === "auction" &&
-                listing.status === "open" && (
+                listing.status === "open" &&
+                !(
+                  listing.auction_end && now > new Date(listing.auction_end)
+                ) && // evita lance depois do fim
+                !isOwner && (
                   <Button onClick={() => setOpenBid(true)}>Dar lance</Button>
                 )}
+
               {isOwner && (
                 <Button
                   variant="outline"
@@ -170,7 +228,6 @@ export default function TradingDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Painel de lances ao vivo (apenas para leilão) */}
         {listing.listing_type === "auction" && (
           <BidsPanel
             tradeId={listing.id}
@@ -185,9 +242,12 @@ export default function TradingDetailPage() {
             onOpenChange={setOpenBid}
             tradeId={listing.id}
             allowCents={listing.auction_allow_cents}
+            startingPrice={listing.auction_starting_price}
             onPlaced={load}
           />
         )}
+
+        {isSale && <SellerContactPanel sellerId={listing.owner_user_id} />}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import {
   Instagram,
   Facebook,
   AtSign,
+  Phone,
 } from "lucide-react";
 
 import {
@@ -38,13 +40,19 @@ import {
 export const dynamic = "force-dynamic";
 
 type ProfileFormData = {
-  display_name: string; // front
+  display_name: string;
   email: string;
   city: string;
-  postal_code: string; // front -> mapeia para 'cep' no DB
+  postal_code: string;
   instagram: string;
   facebook: string;
   tiktok: string;
+
+  // novos
+  contact_email: string;
+  whatsapp: string;
+  share_contact_email: boolean;
+  share_whatsapp: boolean;
 };
 
 export default function ProfilePage() {
@@ -59,6 +67,10 @@ export default function ProfilePage() {
     instagram: "",
     facebook: "",
     tiktok: "",
+    contact_email: "",
+    whatsapp: "",
+    share_contact_email: false,
+    share_whatsapp: true,
   });
 
   useEffect(() => {
@@ -78,6 +90,11 @@ export default function ProfilePage() {
           instagram: p.instagram ?? "",
           facebook: p.facebook ?? "",
           tiktok: p.tiktok ?? "",
+
+          contact_email: p.contact_email ?? user.email ?? "",
+          whatsapp: p.whatsapp ?? "",
+          share_contact_email: !!p.share_contact_email,
+          share_whatsapp: p.share_whatsapp ?? true,
         });
       } catch (e) {
         console.error(e);
@@ -102,12 +119,16 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       await upsertMyProfile({
-        full_name: profileData.display_name || null, // ↔ DB
+        full_name: profileData.display_name || null,
         city: profileData.city || null,
-        cep: profileData.postal_code || null, // ↔ DB
+        cep: profileData.postal_code || null,
         instagram: profileData.instagram || null,
         facebook: profileData.facebook || null,
         tiktok: profileData.tiktok || null,
+        contact_email: profileData.contact_email || null,
+        whatsapp: profileData.whatsapp || null,
+        share_contact_email: profileData.share_contact_email,
+        share_whatsapp: profileData.share_whatsapp,
       });
       toast({ title: "Perfil atualizado", description: "Dados salvos com sucesso." });
     } catch (e) {
@@ -144,7 +165,9 @@ export default function ProfilePage() {
             <Card>
               <CardHeader>
                 <CardTitle>Informações Pessoais</CardTitle>
-                <CardDescription>Atualize suas informações pessoais e de contato.</CardDescription>
+                <CardDescription>
+                  Atualize suas informações pessoais e de contato.
+                </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-6">
@@ -169,7 +192,9 @@ export default function ProfilePage() {
                       Email
                     </Label>
                     <Input id="email" name="email" value={profileData.email} disabled readOnly />
-                    <p className="text-xs text-muted-foreground">O email não pode ser alterado</p>
+                    <p className="text-xs text-muted-foreground">
+                      O email não pode ser alterado
+                    </p>
                   </div>
                 </div>
 
@@ -207,6 +232,64 @@ export default function ProfilePage() {
 
                 <Separator />
 
+                {/* Contato para negociação */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Contato para Negociação</h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp">
+                        <Phone className="h-4 w-4 inline mr-2" />
+                        WhatsApp
+                      </Label>
+                      <Input
+                        id="whatsapp"
+                        name="whatsapp"
+                        value={profileData.whatsapp}
+                        onChange={handleInputChange}
+                        placeholder="(11) 90000-0000 ou 5511900000000"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="share_whatsapp"
+                          checked={profileData.share_whatsapp}
+                          onCheckedChange={(v) =>
+                            setProfileData((p) => ({ ...p, share_whatsapp: v }))
+                          }
+                        />
+                        <Label htmlFor="share_whatsapp">Exibir publicamente</Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contact_email">
+                        <Mail className="h-4 w-4 inline mr-2" />
+                        E-mail de contato
+                      </Label>
+                      <Input
+                        id="contact_email"
+                        name="contact_email"
+                        value={profileData.contact_email}
+                        onChange={handleInputChange}
+                        placeholder="seu@email.com"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="share_contact_email"
+                          checked={profileData.share_contact_email}
+                          onCheckedChange={(v) =>
+                            setProfileData((p) => ({ ...p, share_contact_email: v }))
+                          }
+                        />
+                        <Label htmlFor="share_contact_email">Exibir publicamente</Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Redes sociais */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Redes Sociais</h3>
 
